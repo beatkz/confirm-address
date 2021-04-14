@@ -13,6 +13,9 @@ function init() {
         batchCheck("otherDomainAddresses", state);
         checkAllChecked();
     });
+    document.caPopup.check_firstLinesOfBody.addEventListener("change", (event) => {
+        checkAllChecked();
+    });
     document.caPopup.btn_send.addEventListener("click", (event) => {
         if (countdown_running) {
             sendResult(true);
@@ -40,7 +43,8 @@ function batchCheck(targetId, val) {
 function checkAllChecked() {
     //console.log("checkAllChecked() fired.");
     var internalComplete = true;
-    externalComplete = true;
+    var externalComplete = true;
+    var mailHeadComfirmed = true;
 
     //Confirm my domain check states
     var yourdomains = document.getElementById("yourDomainAddresses"),
@@ -66,9 +70,13 @@ function checkAllChecked() {
         }
         document.caPopup.batchCheck_otherDomains.checked = externalComplete;
     }
+
+    //Confirm first mail body states
+    mailHeadComfirmed = document.caPopup.check_firstLinesOfBody.checked;
+
     //Switch disable state to Send button
     var okBtn = document.caPopup.btn_send;
-    okBtn.disabled = !(internalComplete && externalComplete);
+    okBtn.disabled = !(internalComplete && externalComplete && mailHeadComfirmed);
 }
 
 async function requestRecipients() {
@@ -128,6 +136,8 @@ browser.runtime.onMessage.addListener(async (message) => {
     switch (message.message) {
         case "SEND_RECIPIENTS":
             recipients = message.recipients;
+            mailbody = message.mailbody;
+            console.log(mailbody);
             prefs = message.prefs;
 
             var domainList = getDomainList(prefs["CA_DOMAIN_LIST"]);
@@ -146,6 +156,14 @@ browser.runtime.onMessage.addListener(async (message) => {
                 document.getElementById("otherDomains").style = "display:block;";
                 await pushToList("yourDomainAddresses", internalList);
                 await pushToList("otherDomainAddresses", externalList);
+
+                var isShowBody = prefs["CA_SHOW_BODY"];
+                if(isShowBody){
+                    document.getElementById("firstLinesofBody").style = "display:block;";
+                    document.getElementById("mailBody").innerHTML = mailbody;
+                } else {
+                    document.caPopup.check_firstLinesOfBody.checked = true;
+                }
             }
 
             // Change batch check checkboxes state
